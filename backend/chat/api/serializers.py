@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from ..models import Room
 from client_app.enums import PermissionsDict
@@ -32,3 +33,15 @@ class RoomSerializer(serializers.ModelSerializer):
             'level_id': instance.permission_level,
             'level_name': PermissionsDict[instance.permission_level],
         }
+
+
+class DeleteRoomSerializer(serializers.Serializer):
+    room_id = serializers.IntegerField(min_value=1)
+
+    def create(self, validated_data):
+        try:
+            room = Room.objects.get(id=validated_data['room_id'])
+            room.delete()
+            return room
+        except Room.DoesNotExist:
+            raise ValidationError({'room_id': 'does not exist'}, code=404)
