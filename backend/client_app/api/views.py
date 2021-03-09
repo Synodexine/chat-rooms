@@ -1,3 +1,4 @@
+import ast
 from django.contrib.auth.models import User
 
 from rest_framework.viewsets import GenericViewSet
@@ -7,9 +8,10 @@ from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view
 
 from .serializers import UserSerializer, ClientSerializer
-from ..models import Client
+from ..models import Client, Department, Settings
 
 
 class RegistrationView(GenericViewSet, CreateModelMixin):
@@ -42,3 +44,12 @@ class UserInfoView(APIView):
             return Response({'error': 'No client for this user. Im sorry :('}, status=404)
         serializer = ClientSerializer(instance=client)
         return Response(serializer.data, status=200)
+
+
+@api_view(http_method_names=['POST'])
+def change_user_prefix(request, *args, **kwargs):
+    settings = Settings.objects.get(client=request.user.client)
+    data = ast.literal_eval(bytes.decode(request.body, 'UTF-8'))
+    settings.prefix = data['prefix']
+    settings.save()
+    return Response({'success': 'changed'}, status=200)
